@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nick: the legend of blocks</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .health-container {
+            margin-bottom: 20px;
+        }
+
+        .label {
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 5px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .health-bar-bg {
+            width: 250px;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ff4b2b, #ff416c);
+            transition: width 0.3s ease-out;
+            box-shadow: 0 0 10px rgba(255, 75, 43, 0.5);
+        }
+
+        #enemy-ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #enemy-ui.visible {
+            opacity: 1;
+        }
+
+        #enemy-ui .health-bar-bg {
+            width: 400px;
+            height: 8px;
+        }
+
+        #enemy-ui .health-bar-fill {
+            background: linear-gradient(90deg, #8e2de2, #4a00e0);
+            box-shadow: 0 0 10px rgba(142, 45, 226, 0.5);
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #crosshair::after {
+            content: '';
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+        }
+
+        #crosshair.locked {
+            width: 24px;
+            height: 24px;
+            border-color: #ff3f3f;
+            border-width: 3px;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+
+        #crosshair.hit {
+            transform: translate(-50%, -50%) scale(1.8);
+            border-color: #ffeb3b;
+            background: rgba(255, 235, 59, 0.2);
+            box-shadow: 0 0 20px #ffeb3b;
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-align: right;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui-container">
+        <!-- Player UI -->
+        <div class="health-container">
+            <div class="label">Nick (Player)</div>
+            <div class="health-bar-bg">
+                <div id="player-health" class="health-bar-fill"></div>
+            </div>
+            <div id="kill-count"
+                style="color: white; font-size: 14px; margin-top: 10px; font-weight: bold; text-shadow: 2px 2px 2px black;">
+                KILLS: 0</div>
+            <div id="weapon-ui"
+                style="color: #ffd700; font-size: 16px; margin-top: 5px; font-weight: bold; text-shadow: 2px 2px 2px black;">
+                WEAPON: Sword</div>
+            <div id="ammo-ui"
+                style="color: #ffffff; font-size: 14px; margin-top: 2px; font-weight: bold; text-shadow: 2px 2px 2px black; display: none;">
+                Arrows: 0</div>
+        </div>
+
+        <!-- Enemy UI (Hidden initially) -->
+        <div id="enemy-ui" class="health-container">
+            <div class="label" id="enemy-name">Guardian Dummy</div>
+            <div class="health-bar-bg">
+                <div id="enemy-health" class="health-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over-screen"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white;">
+        <h1 style="font-size: 72px; margin-bottom: 20px; color: #ff0000; text-shadow: 0 0 20px #ff0000;">GAME OVER</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 40px;">Kills: 0</p>
+        <button id="restart-btn"
+            style="padding: 15px 40px; font-size: 20px; background: #4caf50; border: none; color: white; border-radius: 8px; cursor: pointer; pointer-events: auto;">NEW
+            JOURNEY</button>
+    </div>
+
+    <div id="debug-log"
+        style="position: absolute; bottom: 60px; left: 20px; color: #0f0; font-family: monospace; font-size: 10px; pointer-events: none; background: rgba(0,0,0,0.5);">
+    </div>
+
+    <div id="crosshair"></div>
+
+    <div class="controls-hint">
+        WASD: Move | MOUSE: Look<br>
+        SHIFT: Lock-on | CLICK: Attack
+    </div>
+
+    <script>
+        // Catch early errors
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            const log = document.getElementById('debug-log');
+            if (log) log.innerHTML += `<div style="color:red">ERROR: ${msg} [${lineNo}:${columnNo}]</div>`;
+            return false;
+        };
+        console.log = (function (oldLog) {
+            return function (msg) {
+                const log = document.getElementById('debug-log');
+                if (log) log.innerHTML += `<div>LOG: ${msg}</div>`;
+                oldLog.apply(console, arguments);
+            }
+        })(console.log);
+    </script>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
