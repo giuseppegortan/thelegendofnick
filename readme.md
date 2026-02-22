@@ -50,6 +50,8 @@ Questo gioco non è solo un esperimento tecnico, ma un viaggio creativo condivis
 2. Apri il file `index.html` nel tuo browser (consigliato l'uso di un server locale come Live Server per una corretta gestione delle texture e dei moduli).
 3. Divertiti!
 
+Oppure gioca direttamente qui: https://thelegendofnick.vercel.app/
+
 ---
 
 *Fatto con ❤️ da Giuseppe e Nicola.*
